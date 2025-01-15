@@ -10,7 +10,8 @@ The project includes a Godot demo scene, but the font itself can be used in any 
 ## How to Use
 Using Godot engine as an example:
 
-![alt text](docs/image4.png)
+<img src="docs/image4.png" width="256">
+
 (the editor theme used here is [Godot Minimal Theme](https://github.com/passivestar/godot-minimal-theme)  by passivestar)
 
 Use the font in `addons/input_prompt_icon_font/icon.ttf` in Label or RichTextLabel;
@@ -28,9 +29,9 @@ Additionally, with fonts, we can freely add outlines, shadows, and other effects
 
 ## Screenshot
 
-![alt text](docs/image.png)
-![alt text](docs/image2.png)
-![alt text](docs/image3.png)
+<img src="docs/image.png" width="256">
+<img src="docs/image2.png" width="256">
+<img src="docs/image3.png" width="256">
 
 
 ## Limitations
