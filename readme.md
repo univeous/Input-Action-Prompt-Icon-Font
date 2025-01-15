@@ -29,9 +29,9 @@ Additionally, with fonts, we can freely add outlines, shadows, and other effects
 
 ## Screenshot
 
-<img src="docs/image.png" width="256">
-<img src="docs/image2.png" width="256">
-<img src="docs/image3.png" width="256">
+<img src="docs/image.png" width="512">
+<img src="docs/image2.png" width="512">
+<img src="docs/image3.png" width="512">
 
 
 ## Limitations
