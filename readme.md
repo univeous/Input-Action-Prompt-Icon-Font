@@ -10,7 +10,10 @@ The project includes a Godot demo scene, but the font itself can be used in any 
 ## How to Use
 Using Godot engine as an example:
 
-Use the font in addons/input_prompt_icon_font/icon.ttf in Label or RichTextLabel;
+![alt text](docs/image4.png)
+(the editor theme used here is [Godot Minimal Theme](https://github.com/passivestar/godot-minimal-theme)  by passivestar)
+
+Use the font in `addons/input_prompt_icon_font/icon.ttf` in Label or RichTextLabel;
 
 Enter text like `xbox_button_a` to display the corresponding icon. The icon names match Kenney's icon names. Alternatively, you can open the demo scene in `addons/input_prompt_icon_font/demo/demo.tscn` to see all icon names.
 
