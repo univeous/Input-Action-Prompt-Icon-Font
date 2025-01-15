@@ -1,0 +1,156 @@
+[gd_scene load_steps=6 format=3 uid="uid://2ouvpeoea5qi"]
+
+[ext_resource type="FontFile" uid="uid://qalmecrbkxyp" path="res://addons/input_prompt_icon_font/icon.ttf" id="1_qak8n"]
+[ext_resource type="Script" path="res://addons/input_prompt_icon_font/demo/demo.gd" id="1_uoib6"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_uoib6"]
+font = ExtResource("1_qak8n")
+font_size = 64
+outline_color = Color(0.298039, 0.470588, 0.858824, 1)
+
+[sub_resource type="LabelSettings" id="LabelSettings_g3wju"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_gtxo8"]
+font_size = 32
+
+[node name="Example" type="Control" node_paths=PackedStringArray("template", "container")]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -1.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_uoib6")
+template = NodePath("Template")
+container = NodePath("VBox/ScrollContainer/MarginContainer/HFlowContainer")
+
+[node name="Template" type="HBoxContainer" parent="."]
+visible = false
+layout_mode = 2
+offset_left = 20.0
+offset_top = 85.0
+offset_right = 202.0
+offset_bottom = 149.0
+
+[node name="Icon" type="Label" parent="Template"]
+layout_mode = 2
+text = "xbox_button_a"
+label_settings = SubResource("LabelSettings_uoib6")
+
+[node name="Label" type="Label" parent="Template"]
+layout_mode = 2
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+text = "xbox_button_a"
+label_settings = SubResource("LabelSettings_g3wju")
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="Spacer" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBox"]
+layout_mode = 2
+
+[node name="Spacer" type="Control" parent="VBox/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label" type="Label" parent="VBox/HBoxContainer"]
+layout_mode = 2
+text = "icon size:"
+label_settings = SubResource("LabelSettings_gtxo8")
+
+[node name="SpinBox" type="SpinBox" parent="VBox/HBoxContainer"]
+layout_mode = 2
+min_value = 8.0
+max_value = 256.0
+value = 32.0
+
+[node name="Spacer4" type="Control" parent="VBox/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label2" type="Label" parent="VBox/HBoxContainer"]
+layout_mode = 2
+text = "icon outline size:"
+label_settings = SubResource("LabelSettings_gtxo8")
+
+[node name="SpinBox2" type="SpinBox" parent="VBox/HBoxContainer"]
+layout_mode = 2
+value = 32.0
+
+[node name="Spacer3" type="Control" parent="VBox/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label3" type="Label" parent="VBox/HBoxContainer"]
+layout_mode = 2
+text = "icon color:"
+label_settings = SubResource("LabelSettings_gtxo8")
+
+[node name="ColorPickerButton" type="ColorPickerButton" parent="VBox/HBoxContainer"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+color = Color(1, 1, 1, 1)
+
+[node name="Spacer2" type="Control" parent="VBox/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Label4" type="Label" parent="VBox/HBoxContainer"]
+layout_mode = 2
+text = "icon outline color:"
+label_settings = SubResource("LabelSettings_gtxo8")
+
+[node name="ColorPickerButton2" type="ColorPickerButton" parent="VBox/HBoxContainer"]
+custom_minimum_size = Vector2(32, 0)
+layout_mode = 2
+color = Color(1, 1, 1, 1)
+
+[node name="Spacer5" type="Control" parent="VBox/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Spacer2" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="VBox/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="HFlowContainer" type="HFlowContainer" parent="VBox/ScrollContainer/MarginContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 20
+theme_override_constants/v_separation = 10
+
+[node name="Spacer3" type="Control" parent="VBox"]
+custom_minimum_size = Vector2(0, 20)
+layout_mode = 2
+
+[connection signal="value_changed" from="VBox/HBoxContainer/SpinBox" to="." method="_on_spin_box_value_changed"]
+[connection signal="value_changed" from="VBox/HBoxContainer/SpinBox2" to="." method="_on_spin_box_2_value_changed"]
+[connection signal="color_changed" from="VBox/HBoxContainer/ColorPickerButton" to="." method="_on_icon_color_changed"]
+[connection signal="color_changed" from="VBox/HBoxContainer/ColorPickerButton2" to="." method="_on_color_picker_button_color_changed"]
