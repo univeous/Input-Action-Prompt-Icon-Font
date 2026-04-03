@@ -1,0 +1,56 @@
+name: Update Font
+
+on:
+  schedule:
+    - cron: "0 8 * * 1,4"  # Mon & Thu at 08:00 UTC
+  workflow_dispatch:        # allow manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install requests beautifulsoup4 fonttools
+
+      - name: Run updater
+        id: update
+        run: |
+          # Capture version before
+          old=$(python3 -c "import json,pathlib; f=pathlib.Path('kenney_version.json'); print(json.loads(f.read_text())['version'] if f.exists() else 'none')")
+          python3 update_font.py
+          new=$(python3 -c "import json; print(json.loads(open('kenney_version.json').read())['version'])")
+          echo "old=$old" >> $GITHUB_OUTPUT
+          echo "new=$new" >> $GITHUB_OUTPUT
+          if [ "$old" != "$new" ]; then
+            echo "updated=true" >> $GITHUB_OUTPUT
+          else
+            echo "updated=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit & push
+        if: steps.update.outputs.updated == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add addons/input_prompt_icon_font/icon.ttf kenney_version.json
+          git commit -m "chore: update font to Kenney input-prompts ${{ steps.update.outputs.new }}"
+          git push
+
+      - name: Create release
+        if: steps.update.outputs.updated == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: "v${{ steps.update.outputs.new }}"
+          name: "Kenney Input Prompts ${{ steps.update.outputs.new }}"
+          body: |
+            Automated update to [Kenney Input Prompts](https://kenney.nl/assets/input-prompts) version ${{ steps.update.outputs.new }}.
+          files: addons/input_prompt_icon_font/icon.ttf
