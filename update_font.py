@@ -101,6 +101,136 @@ def extract_fonts(zf: zipfile.ZipFile) -> list[TTFont]:
 SKIP_GLYPHS = {".notdef", ".null", "nonmarkingreturn", "space"}
 
 
+def normalize_font(font: TTFont):
+    """
+    Scale and translate all icon glyphs so they visually fill the em square,
+    fixing size and vertical-centering regressions when Kenney updates the
+    source fonts with a different design space (e.g. UPM changed from 1024→2048
+    in v1.4.1 while glyph coordinates only used ~44 % of the new em height).
+
+    Strategy
+    --------
+    1. Find the maximum advance width across all icon glyphs (src_adv).
+    2. Derive a uniform scale so that advance becomes equal to UPM (square em).
+    3. Center the scaled glyphs vertically within the em.
+    4. Update hhea / OS/2 / head metrics to match the new extents.
+    """
+    from fontTools.ttLib.tables._g_l_y_f import GlyphCoordinates
+
+    glyf_tbl = font["glyf"]
+    hmtx = font["hmtx"]
+    upm = font["head"].unitsPerEm
+
+    skip = set(SKIP_GLYPHS) | {".notdef"}
+    icon_names = [g for g in font.getGlyphOrder() if g not in skip]
+
+    # ── 1. Survey current extents ────────────────────────────────────────────
+    advances, ymins, ymaxs = [], [], []
+    for name in icon_names:
+        adv, _ = hmtx.metrics.get(name, (0, 0))
+        if adv > 0:
+            advances.append(adv)
+        g = glyf_tbl[name]
+        if hasattr(g, "yMax") and g.yMax is not None:
+            ymins.append(g.yMin)
+            ymaxs.append(g.yMax)
+
+    if not advances or not ymaxs:
+        print("  normalize_font: nothing to normalize, skipping")
+        return
+
+    from collections import Counter
+    adv_counts = Counter(advances)
+    # Modal advance: the most common advance width (typically 1024 in Kenney fonts).
+    # Using this as scale basis restores the monospaced layout of the pre-1.4.1 fonts
+    # where every icon occupied exactly one em (advance == UPM).
+    modal_adv = adv_counts.most_common(1)[0][0]
+    global_ymin = min(ymins)
+
+    if modal_adv == 0:
+        return
+
+    # ── 2. Collect y-statistics for modal-advance glyphs only ────────────────
+    # Use these for centering so that outlier-tall icons (e.g. flair_arrows_all,
+    # steamdeck trackpad glyphs with yMax=1312) don't shift all typical icons down.
+    modal_ymaxs = [
+        glyf_tbl[n].yMax for n in icon_names
+        if hmtx.metrics.get(n, (0, 0))[0] == modal_adv
+        and hasattr(glyf_tbl[n], "yMax") and glyf_tbl[n].yMax is not None
+    ]
+    modal_ymins = [
+        glyf_tbl[n].yMin for n in icon_names
+        if hmtx.metrics.get(n, (0, 0))[0] == modal_adv
+        and hasattr(glyf_tbl[n], "yMin") and glyf_tbl[n].yMin is not None
+    ]
+    if not modal_ymaxs:
+        return
+
+    # Modal y-statistics (most common yMax/yMin among the typical glyphs)
+    typical_ymax = Counter(modal_ymaxs).most_common(1)[0][0]
+    typical_ymin = Counter(modal_ymins).most_common(1)[0][0]
+
+    # ── 3. Compute transform ─────────────────────────────────────────────────
+    # Uniform scale: modal advance → UPM
+    scale = upm / modal_adv
+
+    # Center the typical glyph in the em square
+    scaled_typical_center = (typical_ymin + typical_ymax) * scale / 2.0
+    translate_y = upm / 2.0 - scaled_typical_center
+
+    # Metrics: ascent from typical top; descent from global bottom (avoids clipping)
+    final_ymax = int(round(typical_ymax * scale + translate_y))
+    final_ymin = int(round(global_ymin * scale + translate_y))
+
+    print(
+        f"  Normalizing glyphs: modal_adv={modal_adv} upm={upm} "
+        f"scale={scale:.4f} translate_y={translate_y:+.1f}"
+    )
+    print(f"  New extents: yMin={final_ymin} yMax={final_ymax}")
+
+    # ── 3. Apply transform to every icon glyph ───────────────────────────────
+    new_max_adv = 0
+    for name in icon_names:
+        g = glyf_tbl[name]
+
+        if g.numberOfContours > 0:
+            # Simple glyph – scale + translate coordinates directly
+            new_coords = [
+                (int(round(x * scale)), int(round(y * scale + translate_y)))
+                for x, y in g.coordinates
+            ]
+            g.coordinates = GlyphCoordinates(new_coords)
+            g.recalcBounds(glyf_tbl)
+
+        elif g.numberOfContours == -1:
+            # Composite glyph – scale component offsets
+            for comp in g.components:
+                comp.x = int(round(comp.x * scale))
+                comp.y = int(round(comp.y * scale + translate_y))
+            g.recalcBounds(glyf_tbl)
+        # else: numberOfContours == 0 → empty (ASCII placeholder), skip
+
+        adv, _ = hmtx.metrics.get(name, (0, 0))
+        new_adv = int(round(adv * scale))
+        hmtx.metrics[name] = (new_adv, 0)
+        new_max_adv = max(new_max_adv, new_adv)
+
+    # ── 4. Update font-level metrics ─────────────────────────────────────────
+    font["hhea"].ascent = final_ymax
+    font["hhea"].descent = final_ymin
+    font["hhea"].lineGap = 0
+    font["hhea"].advanceWidthMax = new_max_adv
+
+    font["OS/2"].sTypoAscender = final_ymax
+    font["OS/2"].sTypoDescender = final_ymin
+    font["OS/2"].sTypoLineGap = 0
+    font["OS/2"].usWinAscent = final_ymax
+    font["OS/2"].usWinDescent = abs(final_ymin)
+
+    font["head"].yMin = final_ymin
+    font["head"].yMax = final_ymax
+
+
 def merge_fonts(named_fonts: list[tuple[str, TTFont]]) -> TTFont:
     """
     Collect all icon glyphs from all TTFs into a single TTFont.
@@ -343,6 +473,9 @@ def main():
 
     print("\nMerging ...")
     merged, cmap_map = merge_fonts(named_fonts)
+
+    print("\nNormalizing glyph metrics ...")
+    normalize_font(merged)
 
     print("\nAdding ligatures ...")
     add_ligatures(merged, cmap_map)
