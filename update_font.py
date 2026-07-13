@@ -63,9 +63,16 @@ def fetch_latest() -> tuple[str, str]:
     if not zip_url:
         raise RuntimeError("Could not find zip download link on the page.")
 
-    # Version is embedded in the filename, e.g. kenney_input-prompts_1.4.1.zip
-    m = re.search(r"_(\d+\.\d+[\.\d]*)\.zip", zip_url)
-    version = m.group(1) if m else "unknown"
+    # The zip filename doesn't always change on point releases (e.g. Kenney
+    # shipped a "1.5a" bugfix under the same kenney_input-prompts_1.5.zip
+    # name), so the real version has to come from the changelog table instead
+    # of the download URL.
+    version_span = soup.select_one("table span.type")
+    if version_span:
+        version = version_span.get_text(strip=True)
+    else:
+        m = re.search(r"_(\d+\.\d+[\.\d]*)\.zip", zip_url)
+        version = m.group(1) if m else "unknown"
 
     print(f"  Latest  : {version}")
     print(f"  Zip URL : {zip_url}")
